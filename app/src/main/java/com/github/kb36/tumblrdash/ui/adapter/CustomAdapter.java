@@ -1,4 +1,4 @@
-package com.github.kb36.tumblrdash.adapter;
+package com.github.kb36.tumblrdash.ui.adapter;
 
 import android.content.Context;
 import android.text.Html;
@@ -11,10 +11,11 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.bumptech.glide.Glide;
 import com.github.kb36.tumblrdash.R;
-import com.github.kb36.tumblrdash.adapter.holders.PhotoPostHolder;
+import com.github.kb36.tumblrdash.ui.holders.PhotoPostHolder;
+import com.github.kb36.tumblrdash.ui.SquaredImageView;
 import com.github.kb36.tumblrdash.utils.Constants;
+import com.squareup.picasso.Picasso;
 import com.tumblr.jumblr.types.Photo;
 import com.tumblr.jumblr.types.PhotoPost;
 import com.tumblr.jumblr.types.PhotoSize;
@@ -97,11 +98,12 @@ public class CustomAdapter extends ArrayAdapter<Post> {
             //Log.d(TAG, "blog name: "+ blogName+ "url: "+ url);
 
             if (blogName != null) {
-                Glide.with(mContext)
+                Picasso.with(mContext)
                         .load(Constants.BLOG_URL_PREFIX + blogName + Constants.BLOG_URL_SUFFIX)
+                        .fit()
                         .centerCrop()
                         .placeholder(R.drawable.placeholder)
-                        .crossFade()
+                        .tag(mContext)
                         .into(holder.avatarView);
                 holder.titleView.setText(post.getBlogName());
             }
@@ -143,37 +145,25 @@ public class CustomAdapter extends ArrayAdapter<Post> {
         convertView = null;
         if(convertView == null) {
             convertView = mInflater.inflate(R.layout.image_post_layout, null);
+            LinearLayout linearLayout = (LinearLayout) convertView.findViewById(R.id.linearLayoutId);
             holder = new PhotoPostHolder();
 
             holder.avatarView = (ImageView) convertView.findViewById(R.id.avatarView);
             holder.titleView = (TextView) convertView.findViewById(R.id.titleView);
 
-            holder.imageView[0] = (ImageView) convertView.findViewById(R.id.imageView00);
-            holder.imageView[1] = (ImageView) convertView.findViewById(R.id.imageView01);
-            holder.imageView[2] = (ImageView) convertView.findViewById(R.id.imageView02);
-            holder.imageView[3] = (ImageView) convertView.findViewById(R.id.imageView03);
-            holder.imageView[4] = (ImageView) convertView.findViewById(R.id.imageView04);
-            holder.imageView[5] = (ImageView) convertView.findViewById(R.id.imageView05);
-            holder.imageView[6] = (ImageView) convertView.findViewById(R.id.imageView06);
-            holder.imageView[7] = (ImageView) convertView.findViewById(R.id.imageView07);
-            holder.imageView[8] = (ImageView) convertView.findViewById(R.id.imageView08);
-            holder.imageView[9] = (ImageView) convertView.findViewById(R.id.imageView09);
-
-            holder.textView[0] = (TextView) convertView.findViewById(R.id.textView00);
-            holder.textView[1] = (TextView) convertView.findViewById(R.id.textView01);
-            holder.textView[2] = (TextView) convertView.findViewById(R.id.textView02);
-            holder.textView[3] = (TextView) convertView.findViewById(R.id.textView03);
-            holder.textView[4] = (TextView) convertView.findViewById(R.id.textView04);
-            holder.textView[5] = (TextView) convertView.findViewById(R.id.textView05);
-            holder.textView[6] = (TextView) convertView.findViewById(R.id.textView06);
-            holder.textView[7] = (TextView) convertView.findViewById(R.id.textView07);
-            holder.textView[8] = (TextView) convertView.findViewById(R.id.textView08);
-            holder.textView[9] = (TextView) convertView.findViewById(R.id.textView09);
-
+            for(int i = 0; i < Constants.IMAGE_SET_MAX_SIZE; i++) {
+                holder.textView[i] = new TextView(mContext);
+                linearLayout.addView(holder.textView[i]);
+                holder.imageView[i] = new SquaredImageView(mContext);
+                holder.imageView[i].setAdjustViewBounds(true);
+                holder.imageView[i].setScaleType(ImageView.ScaleType.FIT_CENTER);
+                holder.imageView[i].setPadding(16,16,16,16);
+                linearLayout.addView(holder.imageView[i]);
+            }
             convertView.setTag(holder);
         }
         holder = (PhotoPostHolder) convertView.getTag();
-        for(int i = 0; i < 10; i++) {
+        for(int i = 0; i < Constants.IMAGE_SET_MAX_SIZE; i++) {
             holder.textView[i].setVisibility(View.GONE);
             holder.imageView[i].setImageDrawable(null);
             holder.imageView[i].setVisibility(View.GONE);
@@ -181,15 +171,16 @@ public class CustomAdapter extends ArrayAdapter<Post> {
         //Log.d(TAG, "Getting the view at position:" + position);
 
         String blogName = post.getBlogName();
-        //String url = Constants.BLOG_URL_PREFIX + blogName + Constants.BLOG_URL_SUFFIX;
-        //Log.d(TAG, "blog name: "+ blogName+ "url: "+ url);
+        //String urld = Constants.BLOG_URL_PREFIX + blogName + Constants.BLOG_URL_SUFFIX;
+        //Log.d(TAG, "blog name: "+ blogName+ "url: "+ urld);
 
         if(blogName != null) {
-            Glide.with(mContext)
+            Picasso.with(mContext)
                     .load(Constants.BLOG_URL_PREFIX + blogName + Constants.BLOG_URL_SUFFIX)
-                    .centerCrop()
                     .placeholder(R.drawable.placeholder)
-                    .crossFade()
+                    .fit()
+                    .centerCrop()
+                    .tag(mContext)
                     .into(holder.avatarView);
             holder.titleView.setText(post.getBlogName());
         }
@@ -197,26 +188,27 @@ public class CustomAdapter extends ArrayAdapter<Post> {
         int i = 0;
         for(Photo p : post.getPhotos()) {
             Log.d(TAG, "cap: "+ p.getCaption()+ " "+ p.getOriginalSize().getUrl() );
-            if(p.getCaption() != null) {
+            if(p.getCaption() != null && p.getCaption().length() > 0) {
                 holder.textView[i].setText(p.getCaption());
                 holder.textView[i].setVisibility(View.VISIBLE);
             }
             if(p.getSizes() != null && p.getSizes().size() > 0) {
                 int minWidth = Integer.MAX_VALUE;
                 String url = null;
-                for(PhotoSize ps: p.getSizes()) {
+                for (PhotoSize ps: p.getSizes()) {
                     if(ps.getWidth() < minWidth) {
                         minWidth = ps.getWidth();
                         url = ps.getUrl();
                     }
                 }
-                Log.d(TAG, "minWidth: "+ minWidth);
+                Log.d(TAG, "minWidth: " + minWidth);
                 holder.imageView[i].setVisibility(View.VISIBLE);
-                Glide.with(mContext)
+                Picasso.with(mContext)
                         .load(url)
+                        .fit()
                         .centerCrop()
                         .placeholder(R.drawable.placeholder)
-                        .crossFade()
+                        .tag(mContext)
                         .into(holder.imageView[i]);
             }
             i++;
