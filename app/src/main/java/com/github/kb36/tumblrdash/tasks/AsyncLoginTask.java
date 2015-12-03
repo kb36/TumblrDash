@@ -51,6 +51,8 @@ public class AsyncLoginTask extends AsyncTask<Void, Void, Boolean> {
             return true;
         } catch(JumblrException e) {
             Log.e(TAG, e.getErrors() + " " + e.getResponseCode());
+        } catch(Exception e) {
+            Log.e(TAG, "error: "+ e.getMessage());
         }
         return false;
     }

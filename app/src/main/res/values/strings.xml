@@ -3,6 +3,7 @@
     <string name="email">Email</string>
     <string name="password">Password</string>
     <string name="login">LOG IN</string>
+    <string name="log_out">LOG OUT</string>
     <string name="pref_file_key">com.github.kb36.jumblrtest.pref</string>
     <string name="token">com.github.kb36.jumblrtest.pref.token</string>
     <string name="secret">com.github.kb36.jumblrtest.pref.secret</string>

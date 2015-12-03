@@ -22,6 +22,9 @@ public class AsyncDashboardFetcher  extends AsyncTask<Integer, Void, List<Post>>
     private JumblrClient mClient;
     private IResultsAvailable resultsCallBack;
 
+    /**
+     * interface for sending results to caller
+     */
     public interface IResultsAvailable {
         public void onResultsAvailable(List<Post> results);
     }
@@ -41,7 +44,12 @@ public class AsyncDashboardFetcher  extends AsyncTask<Integer, Void, List<Post>>
         Map<String, Object> params = new HashMap<String, Object>();
         params.put("limit", Constants.RESULT_LIMIT);
         params.put("offset", offset[0]);
-        return mClient.userDashboard(params);
+        try {
+            return mClient.userDashboard(params);
+        } catch (Exception e) {
+            Log.d(TAG, "exception: "+ e.getMessage());
+        }
+        return null;
     }
 
     @Override

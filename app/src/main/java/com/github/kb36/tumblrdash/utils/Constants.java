@@ -8,9 +8,10 @@ public final class Constants {
     public static final String CONSUMER_SECRET = "GHqE8rxq6r0IXCbBkj9NPR4ed0EIBqb8xP9k6PdulMuwsxJfyo";
     //Number of max results to return in each query
     public static final int RESULT_LIMIT = 20;
-    public static final String BLOG_URL_PREFIX = "http://api.tumblr.com/v2/blog/";
+    public static final String BLOG_URL_PREFIX = "https://api.tumblr.com/v2/blog/";
     public static final String BLOG_URL_SUFFIX = ".tumblr.com/avatar/32";
 
+    public static final int IMAGE_SET_MAX_SIZE = 10;
     //content types
     public static final String TYPE_TEXT = "text";
     public static final String TYPE_PHOTO = "photo";

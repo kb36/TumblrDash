@@ -12,7 +12,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.github.kb36.tumblrdash.R;
-import com.github.kb36.tumblrdash.ui.holders.PhotoPostHolder;
+import com.github.kb36.tumblrdash.ui.viewholders.PhotoPostHolder;
 import com.github.kb36.tumblrdash.ui.SquaredImageView;
 import com.github.kb36.tumblrdash.utils.Constants;
 import com.squareup.picasso.Picasso;
@@ -52,6 +52,7 @@ public class CustomAdapter extends ArrayAdapter<Post> {
 
     @Override
     public int getViewTypeCount() {
+        //currently handles only type text and Photo
         return 2;
     }
 
@@ -75,9 +76,11 @@ public class CustomAdapter extends ArrayAdapter<Post> {
      */
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
+        //handle PhotoSetPost
         if(getItemViewType(position) == VIEW_TYPE_PHOTO) {
             return updatePhotoData((PhotoPost)getItem(position), convertView, parent);
         } else {
+            //handle default Post (text)
             ViewHolder holder = null;
             if (convertView == null) {
                 convertView = mInflater.inflate(mResource, null);
@@ -120,8 +123,6 @@ public class CustomAdapter extends ArrayAdapter<Post> {
                     holder.bodyView.setText("");
                     holder.bodyView.setText(Html.fromHtml(textPost.getBody()));
                 }
-            } else if (post.getType().equals(Constants.TYPE_PHOTO)) {
-
             }
             return convertView;
         }
@@ -137,7 +138,7 @@ public class CustomAdapter extends ArrayAdapter<Post> {
     }
 
     /**
-     * handle loading photo data
+     * handle loading photo set data
      * @return
      */
     private View updatePhotoData(PhotoPost post, View convertView, ViewGroup parent) {
@@ -192,21 +193,13 @@ public class CustomAdapter extends ArrayAdapter<Post> {
                 holder.textView[i].setText(p.getCaption());
                 holder.textView[i].setVisibility(View.VISIBLE);
             }
-            if(p.getSizes() != null && p.getSizes().size() > 0) {
-                int minWidth = Integer.MAX_VALUE;
-                String url = null;
-                for (PhotoSize ps: p.getSizes()) {
-                    if(ps.getWidth() < minWidth) {
-                        minWidth = ps.getWidth();
-                        url = ps.getUrl();
-                    }
-                }
-                Log.d(TAG, "minWidth: " + minWidth);
+            String url = getLowResImage(p);
+            if(url != null) {
                 holder.imageView[i].setVisibility(View.VISIBLE);
                 Picasso.with(mContext)
                         .load(url)
                         .fit()
-                        .centerCrop()
+                        .centerInside()
                         .placeholder(R.drawable.placeholder)
                         .tag(mContext)
                         .into(holder.imageView[i]);
@@ -214,5 +207,25 @@ public class CustomAdapter extends ArrayAdapter<Post> {
             i++;
         }
         return convertView;
+    }
+
+    /**
+     * from the list of images gives the low res image
+     * @param photo
+     * @return
+     */
+    private String getLowResImage(Photo photo) {
+        if(photo.getSizes() == null ||
+                photo.getSizes().size() == 0)
+            return null;
+        int minWidth = Integer.MAX_VALUE;
+        String url = null;
+        for (PhotoSize ps: photo.getSizes()) {
+            if(ps.getWidth() < minWidth) {
+                minWidth = ps.getWidth();
+                url = ps.getUrl();
+            }
+        }
+        return url;
     }
 }

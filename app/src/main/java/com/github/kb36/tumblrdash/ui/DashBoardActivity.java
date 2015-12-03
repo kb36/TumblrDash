@@ -2,30 +2,31 @@ package com.github.kb36.tumblrdash.ui;
 
 import android.app.FragmentManager;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AbsListView;
-import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import com.bumptech.glide.Glide;
 import com.github.kb36.tumblrdash.R;
-import com.github.kb36.tumblrdash.adapter.CustomAdapter;
 import com.github.kb36.tumblrdash.datastore.RetainedFragment;
 import com.github.kb36.tumblrdash.tasks.AsyncDashboardFetcher;
 import com.github.kb36.tumblrdash.tasks.AsyncLoginTask;
+import com.github.kb36.tumblrdash.ui.adapter.CustomAdapter;
 import com.github.kb36.tumblrdash.utils.Constants;
+import com.squareup.picasso.Picasso;
 import com.tumblr.jumblr.types.Post;
 
 import java.util.List;
@@ -53,6 +54,8 @@ public class DashBoardActivity extends AppCompatActivity
     private ProgressBar mFooterProgressBar;
     private ProgressBar mMainProgressBar;
     private View mFooterView;
+
+    private SwipeRefreshLayout mSwipeRefreshLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,19 +101,20 @@ public class DashBoardActivity extends AppCompatActivity
         mFooterProgressBar.setVisibility(View.GONE);
         mListView.addFooterView(mFooterView);
 
+        //add scroll listener for paging the results
         mListView.setOnScrollListener(new AbsListView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(AbsListView view, int scrollState) {
                 if (scrollState == SCROLL_STATE_IDLE || scrollState == SCROLL_STATE_TOUCH_SCROLL) {
-                    Glide.with(mContext).resumeRequests();
+                    Picasso.with(mContext).resumeTag(mContext);
                 } else {
-                    Glide.with(mContext).pauseRequests();
+                    Picasso.with(mContext).pauseTag(mContext);
                 }
                 if (scrollState == SCROLL_STATE_IDLE) {
                     Log.d(TAG, "last visible: " + mListView.getLastVisiblePosition());
                     if (mListView.getLastVisiblePosition() >= mDataFragment.getData().size() - 1) {
                         if (canFetchMore()) {
-                            if(!isFooterProgressVisible()) {
+                            if (!isFooterProgressVisible()) {
                                 Log.d(TAG, "making footer visible");
                                 mFooterProgressBar.setVisibility(View.VISIBLE);
                             }
@@ -125,17 +129,21 @@ public class DashBoardActivity extends AppCompatActivity
 
             }
         });
-        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+        mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipeContainer);
+        mSwipeRefreshLayout.setColorSchemeResources(android.R.color.holo_blue_bright,
+                android.R.color.holo_green_light,
+                android.R.color.holo_orange_light,
+                android.R.color.holo_red_light);
+        mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                //starts the detailed video view
-                //QueryResult.Result result = mDataFragment.getDataItem(position);
-                //String[] parts = result.uri.split("/");
-                //Intent intent = new Intent(VideoResultListActivity.this, VideoDetailActivity.class);
-                //intent.putExtra("id", parts[2]);
-                //startActivity(intent);
+            public void onRefresh() {
+                //user wants to refresh the data. Reset load complete
+                mDataFragment.resetLoadComplete();
+                startDashboardFetchTask(0);
             }
         });
+
         mAdapter.notifyDataSetChanged();
 
         //first fetch
@@ -154,7 +162,7 @@ public class DashBoardActivity extends AppCompatActivity
         //load login screen
         setContentView(R.layout.activity_login_screen);
         Button login = (Button) findViewById(R.id.login);
-        final EditText email= (EditText) findViewById(R.id.email);
+        final EditText email = (EditText) findViewById(R.id.email);
         final EditText password = (EditText) findViewById(R.id.passsword);
 
         login.setOnClickListener(new View.OnClickListener() {
@@ -171,6 +179,10 @@ public class DashBoardActivity extends AppCompatActivity
         });
     }
 
+    /**
+     * start fetching the dash board results from given offset
+     * @param offset
+     */
     private void startDashboardFetchTask(Integer offset) {
         //read token and shared secret
         SharedPreferences sp = getSharedPreferences(getString(R.string.pref_file_key),
@@ -249,8 +261,23 @@ public class DashBoardActivity extends AppCompatActivity
         return !mDataFragment.isLoadComplete() && !isRunning;
     }
 
+    /**
+     * handlre received data results
+     * @param results
+     */
     @Override
     public void onResultsAvailable(List<Post> results) {
+        //Refresh result received
+        if(mSwipeRefreshLayout != null && mSwipeRefreshLayout.isRefreshing()) {
+            mSwipeRefreshLayout.setRefreshing(false);
+            if(results != null && results.size() > 0) {
+                Log.d(TAG, "refresh data received: ");
+                mDataFragment.resetData();
+                mDataFragment.addData(results);
+                mAdapter.notifyDataSetChanged();
+                return;
+            }
+        }
         if(isFooterProgressVisible()) {
             mFooterProgressBar.setVisibility(View.GONE);
         }
@@ -285,5 +312,38 @@ public class DashBoardActivity extends AppCompatActivity
     private void setMainProgressBarVisibility(int visible) {
         if(mMainProgressBar != null)
             mMainProgressBar.setVisibility(visible);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.options_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle item selection
+        switch (item.getItemId()) {
+            case R.id.log_out:
+                resetCreds();
+                finish();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    /**
+     * resets login data for log out
+     */
+    private void resetCreds() {
+        SharedPreferences sp = mContext.getSharedPreferences(mContext.getString(R.string.pref_file_key),
+                mContext.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sp.edit();
+        //Log.d(TAG, "token: "+ token.getToken()+ " secret: "+ token.getSecret());
+        editor.putString(mContext.getString(R.string.token), null);
+        editor.putString(mContext.getString(R.string.secret), null);
+        editor.apply();
     }
 }
