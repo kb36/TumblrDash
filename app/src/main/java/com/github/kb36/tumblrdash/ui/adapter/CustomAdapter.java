@@ -59,7 +59,6 @@ public class CustomAdapter extends ArrayAdapter<Post> {
     @Override
     public int getItemViewType(int position) {
         if(getItem(position).getType().equals(Constants.TYPE_PHOTO)) {
-            Log.d(TAG, "returning photo post");
             return VIEW_TYPE_PHOTO;
         } else {
             return VIEW_TYPE_DEFAULT;
@@ -111,7 +110,7 @@ public class CustomAdapter extends ArrayAdapter<Post> {
                 holder.titleView.setText(post.getBlogName());
             }
 
-            Log.d(TAG, post.getType());
+            //Log.d(TAG, post.getType());
             //TEXT
             if (post.getType().equals(Constants.TYPE_TEXT)) {
                 TextPost textPost = (TextPost) post;
@@ -188,7 +187,7 @@ public class CustomAdapter extends ArrayAdapter<Post> {
 
         int i = 0;
         for(Photo p : post.getPhotos()) {
-            Log.d(TAG, "cap: "+ p.getCaption()+ " "+ p.getOriginalSize().getUrl() );
+            //Log.d(TAG, "cap: "+ p.getCaption()+ " "+ p.getOriginalSize().getUrl() );
             if(p.getCaption() != null && p.getCaption().length() > 0) {
                 holder.textView[i].setText(p.getCaption());
                 holder.textView[i].setVisibility(View.VISIBLE);
